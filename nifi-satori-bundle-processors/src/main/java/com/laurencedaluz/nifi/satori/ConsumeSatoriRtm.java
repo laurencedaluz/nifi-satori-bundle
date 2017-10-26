@@ -47,7 +47,6 @@ import com.satori.rtm.*;
 import com.satori.rtm.auth.*;
 import com.satori.rtm.model.*;
 
-//TODO: Add StreamView support (via SQL Filter)
 //TODO: Add support for HTTPS proxy
 //TODO: Add proper validators
 
@@ -191,6 +190,7 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
         String filter = context.getProperty(FILTER).getValue();
         String subMode = context.getProperty(SUBSCRIPTION_MODE).getValue();
         boolean shouldAuthenticate = context.getProperty(ROLE).isSet();
+        boolean useFilter = context.getProperty(FILTER).isSet();
 
         // Connect to satori
         final RtmClientBuilder builder = new RtmClientBuilder(endpoint, appkey)
@@ -230,8 +230,8 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
 
         client.start();
 
-        // Set up Satori Subscription
-        client.createSubscription(channel,
+        // Set up Satori Subscription Config
+        SubscriptionConfig subConfig = new SubscriptionConfig(
                 (subMode.equals("SIMPLE")) ? SubscriptionMode.SIMPLE : SubscriptionMode.RELIABLE, // Set sub mode
                 new SubscriptionAdapter() {
                     @Override
@@ -254,6 +254,14 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
                         }
                     }
                 });
+
+        // Apply SQL filter if supplied
+        if (useFilter) {
+            subConfig.setFilter(filter);
+        }
+
+        // Create the subscription!
+        client.createSubscription(channel,subConfig);
 
     }
 
