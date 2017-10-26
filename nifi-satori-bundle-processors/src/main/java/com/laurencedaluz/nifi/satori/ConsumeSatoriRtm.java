@@ -231,7 +231,6 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
 
         client.start();
 
-        getLogger().info("before Sub config");
         // Set up Satori Subscription Config
         SubscriptionConfig subConfig = new SubscriptionConfig(
                 (subMode.equals("SIMPLE")) ? SubscriptionMode.SIMPLE : SubscriptionMode.RELIABLE, // Set sub mode
@@ -252,7 +251,11 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
                     public void onSubscriptionData(SubscriptionData data) {
                         // when incoming messages arrive
                         for (AnyJson json : data.getMessages()) {
-                            messageQueue.add(json.toString());
+                            try {
+                                messageQueue.add(json.toString());
+                            } catch (NullPointerException e) {
+                                getLogger().error(e.toString());
+                            }
                         }
                     }
                 });
@@ -265,16 +268,9 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
         // Create the subscription!
         try {
             client.createSubscription(channel,subConfig);
-
-            //Temporary workaround for a bug - waiting 2 seconds before OnTrigger.
-            //TODO: fix this..
-            Thread.sleep(2000);
         } catch (Exception e) {
             getLogger().error(e.toString());
         }
-
-
-
 
     }
 
