@@ -52,6 +52,7 @@ public class ConsumeSatoriRtmTest {
         runner.setProperty(ConsumeSatoriRtm.ENDPOINT, endpoint);
         runner.setProperty(ConsumeSatoriRtm.APPKEY, appkey);
         runner.setProperty(ConsumeSatoriRtm.CHANNEL, channel);
+        runner.setProperty(ConsumeSatoriRtm.SUBSCRIPTION_MODE, "SIMPLE");
 
         //TODO: unit testing..
     }

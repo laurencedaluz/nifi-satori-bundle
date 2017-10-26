@@ -110,7 +110,7 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
             .required(true)
             .allowableValues(SUB_MODE_SIMPLE,SUB_MODE_RELIABLE)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .defaultValue("wss://open-data.api.satori.com")
+            .defaultValue("SIMPLE")
             .build();
 
     public static final PropertyDescriptor CHANNEL = new PropertyDescriptor
