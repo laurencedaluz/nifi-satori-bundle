@@ -16,6 +16,7 @@
  */
 package com.laurencedaluz.nifi.satori;
 
+import com.satori.rtm.SubscriptionMode;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;

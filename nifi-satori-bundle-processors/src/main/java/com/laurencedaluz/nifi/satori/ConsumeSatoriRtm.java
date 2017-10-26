@@ -18,6 +18,7 @@ package com.laurencedaluz.nifi.satori;
 
 import org.apache.nifi.annotation.behavior.*;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
+import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.flowfile.FlowFile;
@@ -46,7 +47,6 @@ import com.satori.rtm.*;
 import com.satori.rtm.auth.*;
 import com.satori.rtm.model.*;
 
-//TODO: Add configuration property for 'SIMPLE' and 'RELIABLE' position tracking
 //TODO: Add StreamView support (via SQL Filter)
 //TODO: Add support for HTTPS proxy
 //TODO: Add proper validators
@@ -59,6 +59,14 @@ import com.satori.rtm.model.*;
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 @SupportsBatching
 public class ConsumeSatoriRtm extends AbstractProcessor {
+
+    private static final AllowableValue SUB_MODE_SIMPLE = new AllowableValue("SIMPLE", "SIMPLE",
+            "RTM doesn't track the position value for the subscription. Instead, when RTM resubscribes following a reconnection, "
+                    + "it fast-forwards to the earliest position that points to a non-expired message.");
+
+    private static final AllowableValue SUB_MODE_RELIABLE = new AllowableValue("RELIABLE", "RELIABLE",
+            "RTM tracks the position value for the subscription and tries to use it when resubscribing after the connection drops and the client reconnects. "
+                    + "If the position points to an expired message, RTM fast-forwards to the earliest position that points to a non-expired message.");
 
     public static final PropertyDescriptor ENDPOINT = new PropertyDescriptor
             .Builder().name("ENDPOINT")
@@ -94,6 +102,16 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
             .required(false)
             .addValidator(Validator.VALID)
             .sensitive(true)
+            .build();
+
+    public static final PropertyDescriptor SUBSCRIPTION_MODE = new PropertyDescriptor
+            .Builder().name("SUBSCRIPTION_MODE")
+            .displayName("Subscription Mode")
+            .description("Determines how the position in the queue will be tracked")
+            .required(true)
+            .allowableValues(SUB_MODE_SIMPLE,SUB_MODE_RELIABLE)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .defaultValue("wss://open-data.api.satori.com")
             .build();
 
     public static final PropertyDescriptor CHANNEL = new PropertyDescriptor
@@ -171,6 +189,7 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
         String roleSecretKey = context.getProperty(ROLE_SECRET_KEY).getValue();
         String channel = context.getProperty(CHANNEL).getValue();
         String filter = context.getProperty(FILTER).getValue();
+        String subMode = context.getProperty(SUBSCRIPTION_MODE).getValue();
         boolean shouldAuthenticate = context.getProperty(ROLE).isSet();
 
         // Connect to satori
@@ -212,7 +231,8 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
         client.start();
 
         // Set up Satori Subscription
-        client.createSubscription(channel, SubscriptionMode.SIMPLE,
+        client.createSubscription(channel,
+                (subMode.equals("SIMPLE")) ? SubscriptionMode.SIMPLE : SubscriptionMode.RELIABLE, // Set sub mode
                 new SubscriptionAdapter() {
                     @Override
                     public void onEnterSubscribed(SubscribeRequest request, SubscribeReply reply) {
