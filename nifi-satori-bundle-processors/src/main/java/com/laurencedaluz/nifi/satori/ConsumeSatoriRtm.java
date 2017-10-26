@@ -158,6 +158,7 @@ public class ConsumeSatoriRtm extends AbstractProcessor {
         descriptors.add(APPKEY);
         descriptors.add(ROLE);
         descriptors.add(ROLE_SECRET_KEY);
+        descriptors.add(SUBSCRIPTION_MODE);
         descriptors.add(CHANNEL);
         descriptors.add(FILTER);
         descriptors.add(BATCH_SIZE);
