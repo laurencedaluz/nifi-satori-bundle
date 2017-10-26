@@ -16,16 +16,10 @@
  */
 package com.laurencedaluz.nifi.satori;
 
-import com.satori.rtm.SubscriptionMode;
-import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.List;
-
-//TODO: Test Custom Validators / Configs
 
 public class ConsumeSatoriRtmTest {
 
@@ -37,45 +31,28 @@ public class ConsumeSatoriRtmTest {
     }
 
     @Test
-    public void testProcessor() {
+    public void testConfigValidators() {
 
         // Generate a test runner to mock a processor in a flow
         TestRunner runner = TestRunners.newTestRunner(new ConsumeSatoriRtm());
 
         // Define satori connection properties
-        String endpoint = "wss://open-data.api.satori.com";
-        String appkey = "aaa";
-        String role = "";
-        String roleSecretKey = "";
-        String channel = "big-rss";
-        String filter = "";
-
-
-        // Add properties
-        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, endpoint);
-        runner.setProperty(ConsumeSatoriRtm.APPKEY, appkey);
-        runner.setProperty(ConsumeSatoriRtm.CHANNEL, channel);
+        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "wss://open-data.api.satori.com");
+        runner.setProperty(ConsumeSatoriRtm.APPKEY, "aaa");
+        runner.setProperty(ConsumeSatoriRtm.CHANNEL, "big-rss");
         runner.setProperty(ConsumeSatoriRtm.SUBSCRIPTION_MODE, "SIMPLE");
+        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "100");
+        runner.assertValid();
 
-        runner.run();
+        // Test endpoint is not empty
+        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "");
+        runner.assertNotValid();
+        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "wss://open-data.api.satori.com");
 
-        /*
-        List<MockFlowFile> results = runner.getFlowFilesForRelationship(ConsumeSatoriRtm.SUCCESS);
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        //assertTrue("1 match", results.size() == 1);
-        MockFlowFile result = results.get(0);
-        String resultValue = new String(runner.getContentAsByteArray(result));
-        System.out.print("\nOUTPUT FILE:\n-----------\n");
-        System.out.print(resultValue);
-        */
-
-        //TODO: unit testing..
+        // Test Batch size is a valid int
+        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "-1");
+        runner.assertNotValid();
+        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "100");
     }
 
 }
