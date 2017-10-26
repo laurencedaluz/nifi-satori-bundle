@@ -48,7 +48,6 @@ import com.satori.rtm.auth.*;
 import com.satori.rtm.model.*;
 
 //TODO: Add support for HTTPS proxy
-//TODO: Add proper validators
 
 @Tags({"pubsub", "satori", "rtm", "realtime", "json"})
 @CapabilityDescription("Consumes a streaming data feed from Satori RTM (https://www.satori.com/docs/using-satori/overview)")

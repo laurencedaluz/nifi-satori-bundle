@@ -53,6 +53,7 @@ public class ConsumeSatoriRtmTest {
         runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "-1");
         runner.assertNotValid();
         runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "100");
+
     }
 
 }
