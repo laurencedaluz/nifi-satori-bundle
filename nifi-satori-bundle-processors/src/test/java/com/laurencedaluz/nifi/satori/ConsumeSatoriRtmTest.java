@@ -17,10 +17,13 @@
 package com.laurencedaluz.nifi.satori;
 
 import com.satori.rtm.SubscriptionMode;
+import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.List;
 
 //TODO: Test Custom Validators / Configs
 
@@ -53,6 +56,24 @@ public class ConsumeSatoriRtmTest {
         runner.setProperty(ConsumeSatoriRtm.APPKEY, appkey);
         runner.setProperty(ConsumeSatoriRtm.CHANNEL, channel);
         runner.setProperty(ConsumeSatoriRtm.SUBSCRIPTION_MODE, "SIMPLE");
+
+        runner.run();
+
+        /*
+        List<MockFlowFile> results = runner.getFlowFilesForRelationship(ConsumeSatoriRtm.SUCCESS);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //assertTrue("1 match", results.size() == 1);
+        MockFlowFile result = results.get(0);
+        String resultValue = new String(runner.getContentAsByteArray(result));
+        System.out.print("\nOUTPUT FILE:\n-----------\n");
+        System.out.print(resultValue);
+        */
 
         //TODO: unit testing..
     }
