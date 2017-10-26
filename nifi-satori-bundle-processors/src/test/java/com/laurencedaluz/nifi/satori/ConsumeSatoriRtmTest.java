@@ -44,7 +44,7 @@ public class ConsumeSatoriRtmTest {
 
         // Define satori connection properties
         String endpoint = "wss://open-data.api.satori.com";
-        String appkey = "";
+        String appkey = "aaa";
         String role = "";
         String roleSecretKey = "";
         String channel = "big-rss";
