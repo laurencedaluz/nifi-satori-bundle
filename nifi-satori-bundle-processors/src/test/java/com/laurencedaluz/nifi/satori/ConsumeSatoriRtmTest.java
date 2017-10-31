@@ -21,38 +21,38 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ConsumeSatoriRtmTest {
+public class ConsumeSatoriRTMTest {
 
     private TestRunner testRunner;
 
     @Before
     public void init() {
-        testRunner = TestRunners.newTestRunner(ConsumeSatoriRtm.class);
+        testRunner = TestRunners.newTestRunner(ConsumeSatoriRTM.class);
     }
 
     @Test
     public void testConfigValidators() {
 
         // Generate a test runner to mock a processor in a flow
-        TestRunner runner = TestRunners.newTestRunner(new ConsumeSatoriRtm());
+        TestRunner runner = TestRunners.newTestRunner(new ConsumeSatoriRTM());
 
         // Define satori connection properties
-        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "wss://open-data.api.satori.com");
-        runner.setProperty(ConsumeSatoriRtm.APPKEY, "aaa");
-        runner.setProperty(ConsumeSatoriRtm.CHANNEL, "big-rss");
-        runner.setProperty(ConsumeSatoriRtm.SUBSCRIPTION_MODE, "SIMPLE");
-        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "100");
+        runner.setProperty(ConsumeSatoriRTM.ENDPOINT, "wss://open-data.api.satori.com");
+        runner.setProperty(ConsumeSatoriRTM.APPKEY, "aaa");
+        runner.setProperty(ConsumeSatoriRTM.CHANNEL, "big-rss");
+        runner.setProperty(ConsumeSatoriRTM.SUBSCRIPTION_MODE, "SIMPLE");
+        runner.setProperty(ConsumeSatoriRTM.BATCH_SIZE, "100");
         runner.assertValid();
 
         // Test endpoint is not empty
-        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "");
+        runner.setProperty(ConsumeSatoriRTM.ENDPOINT, "");
         runner.assertNotValid();
-        runner.setProperty(ConsumeSatoriRtm.ENDPOINT, "wss://open-data.api.satori.com");
+        runner.setProperty(ConsumeSatoriRTM.ENDPOINT, "wss://open-data.api.satori.com");
 
         // Test Batch size is a valid int
-        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "-1");
+        runner.setProperty(ConsumeSatoriRTM.BATCH_SIZE, "-1");
         runner.assertNotValid();
-        runner.setProperty(ConsumeSatoriRtm.BATCH_SIZE, "100");
+        runner.setProperty(ConsumeSatoriRTM.BATCH_SIZE, "100");
 
     }
 

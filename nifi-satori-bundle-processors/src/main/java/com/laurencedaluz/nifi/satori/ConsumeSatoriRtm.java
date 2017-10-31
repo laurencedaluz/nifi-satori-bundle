@@ -56,7 +56,7 @@ import com.satori.rtm.model.*;
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 @SupportsBatching
-public class ConsumeSatoriRtm extends AbstractProcessor {
+public class ConsumeSatoriRTM extends AbstractProcessor {
 
     private static final AllowableValue SUB_MODE_SIMPLE = new AllowableValue("SIMPLE", "SIMPLE",
             "RTM doesn't track the position value for the subscription. Instead, when RTM resubscribes following a reconnection, "
