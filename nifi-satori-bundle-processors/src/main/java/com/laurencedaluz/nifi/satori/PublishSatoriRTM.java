@@ -57,7 +57,7 @@ import com.satori.rtm.model.*;
 //TODO: Add support for HTTPS proxy
 
 @Tags({"pubsub", "satori", "rtm", "realtime", "json"})
-@CapabilityDescription("Consumes a streaming data feed from Satori RTM (https://www.satori.com/docs/using-satori/overview)")
+@CapabilityDescription("Publishes incoming messages to Satori RTM (https://www.satori.com/docs/using-satori/overview)")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
@@ -104,7 +104,7 @@ public class PublishSatoriRTM extends AbstractProcessor {
     public static final PropertyDescriptor CHANNEL = new PropertyDescriptor
             .Builder().name("CHANNEL")
             .displayName("Channel")
-            .description("Name of channel to consume from")
+            .description("Name of channel to publish to")
             .required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
