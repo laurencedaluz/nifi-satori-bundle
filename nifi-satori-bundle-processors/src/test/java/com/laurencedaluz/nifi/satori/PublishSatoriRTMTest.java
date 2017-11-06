@@ -37,7 +37,8 @@ public class PublishSatoriRTMTest {
     public void testProcessor() {
 
         // Content to be mock a geo csv file
-        String inputJson = "{\"test1\": 1, \"testOne\": \"one\"}";
+        //String inputJson = "{\"test1\": 1, \"testOne\": \"one\"}";
+        String inputJson = "test,1,test,2";
         InputStream content = new ByteArrayInputStream(inputJson.getBytes());
 
         // Generate a test runner to mock a processor in a flow
