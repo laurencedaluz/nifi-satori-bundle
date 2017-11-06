@@ -148,6 +148,7 @@ public class PublishSatoriRTM extends AbstractProcessor {
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
         relationships.add(SUCCESS);
+        relationships.add(FAILURE);
         this.relationships = Collections.unmodifiableSet(relationships);
     }
 
@@ -238,21 +239,19 @@ public class PublishSatoriRTM extends AbstractProcessor {
         final String message = contentsRef.get();
 
         // Publish message to Satori
-        ListenableFuture<Pdu<PublishReply>> reply = client.publish(channel, message, Ack.YES);
+        try {
+            // Publish message to Satori
+            client.publish(channel, message, Ack.YES);//TODO: Ack config property
 
-        Futures.addCallback(reply, new FutureCallback<Pdu<PublishReply>>() {
-            public void onSuccess(Pdu<PublishReply> publishReplyPdu) {
-                // Success!
-                session.transfer(flowFile, SUCCESS);
-            }
-
-            public void onFailure(Throwable t) {
-                // Failure!
-                getLogger().error("Unable to process file: \n" + t.getMessage());
-                session.transfer(flowFile, FAILURE);
-                context.yield();
-            }
-        });
+            // Success!
+            session.transfer(flowFile, SUCCESS);
+        } catch (Throwable t)
+        {
+            // Failure!
+            getLogger().error("Unable to process file: \n" + t.getMessage());
+            session.transfer(flowFile, FAILURE);
+            context.yield();
+        }
 
     }
 
