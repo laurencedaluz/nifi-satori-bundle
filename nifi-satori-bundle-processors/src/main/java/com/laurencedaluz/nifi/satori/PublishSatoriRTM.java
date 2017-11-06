@@ -61,7 +61,7 @@ import com.satori.rtm.model.*;
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-@InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
+@InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @SupportsBatching
 public class PublishSatoriRTM extends AbstractProcessor {
 
