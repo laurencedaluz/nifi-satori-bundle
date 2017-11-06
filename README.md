@@ -14,4 +14,5 @@ To install the bundle, you will need to copy the nar file into the ```lib``` dir
 
 # Processors
 The project currently provides the following processors:
- * ```ConsumeSatoriRtm``` - used to consume a live data feed from a Satori RTM channel
+ * ```ConsumeSatoriRTM``` - used to consume a live data feed from a Satori RTM channel
+ * ```PublishSatoriRTM``` - used to publish messages to a Satori RTM channel
