@@ -45,19 +45,15 @@ public class PublishSatoriRTMTest {
 
         // Define satori connection properties
         runner.setProperty(PublishSatoriRTM.ENDPOINT, "wss://qwxhvwv6.api.satori.com");
-        runner.setProperty(PublishSatoriRTM.APPKEY, "ed444FdFF8Fa73Fc65F6EA2202DfB33E");
+        runner.setProperty(PublishSatoriRTM.APPKEY, "aaa");
         runner.setProperty(PublishSatoriRTM.CHANNEL, "nifitest");
         runner.assertValid();
 
         // Add the content to the runner
-        runner.enqueue(content);
-        runner.enqueue(content);
-        runner.enqueue(content);
-        runner.enqueue(content);
-        runner.enqueue(content);
+        //runner.enqueue(content);
 
         // Run the enqueued content, it also takes an int = number of contents queued
-        runner.run(1);
+        //runner.run(1);
     }
 
 }
