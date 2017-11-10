@@ -16,6 +16,7 @@
  */
 package com.laurencedaluz.nifi.satori;
 
+import com.google.gson.JsonParser;
 import org.apache.nifi.annotation.behavior.*;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -35,15 +36,23 @@ import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.commons.io.IOUtils;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.satori.rtm.*;
 import com.satori.rtm.auth.*;
+import com.google.gson.JsonObject;
+import org.apache.nifi.stream.io.exception.TokenTooLargeException;
+import org.apache.nifi.stream.io.util.StreamDemarcator;
 
 //TODO: Add support for HTTPS proxy
+//TODO: ? Support partial failures when using stream demarcator (send failed events to PARTIAL_FAILURE relationship)
 
 @Tags({"pubsub", "satori", "rtm", "realtime", "json"})
 @CapabilityDescription("Publishes incoming messages to Satori RTM (https://www.satori.com/docs/using-satori/overview)")
@@ -98,13 +107,13 @@ public class PublishSatoriRTM extends AbstractProcessor {
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
-  /*  public static final PropertyDescriptor MSG_DEMARCATOR = new PropertyDescriptor
+    public static final PropertyDescriptor MSG_DEMARCATOR = new PropertyDescriptor
             .Builder().name("MSG_DEMARCATOR")
             .displayName("Message Demarcator")
             .description("//todo")
             .addValidator(Validator.VALID)
             .required(false)
-            .build();*/
+            .build();
 
     public static final Relationship SUCCESS = new Relationship.Builder()
             .name("success")
@@ -132,7 +141,7 @@ public class PublishSatoriRTM extends AbstractProcessor {
         descriptors.add(ROLE);
         descriptors.add(ROLE_SECRET_KEY);
         descriptors.add(CHANNEL);
-        //descriptors.add(MSG_DEMARCATOR);
+        descriptors.add(MSG_DEMARCATOR);
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
@@ -150,6 +159,9 @@ public class PublishSatoriRTM extends AbstractProcessor {
     public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         return descriptors;
     }
+
+
+    private final ConcurrentMap<FlowFile, Exception> failures = new ConcurrentHashMap<>();
 
     @OnScheduled
     public void onScheduled(final ProcessContext context) {
@@ -210,38 +222,74 @@ public class PublishSatoriRTM extends AbstractProcessor {
 
         // Get required user properties
         String channel = context.getProperty(CHANNEL).getValue();
-        // TODO: Implement Message Demarcator
-        //String msgDemarcator = context.getProperty(MSG_DEMARCATOR).getValue();
-        //boolean useDemarcator = context.getProperty(MSG_DEMARCATOR).isSet();
+        boolean useDemarcator = context.getProperty(MSG_DEMARCATOR).isSet();
 
-        // Read incoming message string
-        final AtomicReference<String> contentsRef = new AtomicReference<>(null);
+        final byte[] demarcatorBytes;
+        if (useDemarcator) {
+            demarcatorBytes = context.getProperty(MSG_DEMARCATOR).getValue().getBytes(StandardCharsets.UTF_8);
+        } else {
+            demarcatorBytes = null;
+        }
 
+
+        // Publish message to Satori
+        // TODO: clean up this nested try/catch mess
         session.read(flowFile, new InputStreamCallback() {
             @Override
-            public void process(final InputStream in) throws IOException {
-                final String contents = IOUtils.toString(in, "UTF-8");
-                contentsRef.set(contents);
+            public void process(final InputStream rawIn) throws IOException {
+                try (final InputStream in = new BufferedInputStream(rawIn)) {
+
+                    try (final StreamDemarcator demarcator = new StreamDemarcator(in, demarcatorBytes, 64000)) { //TODO: maximum message size
+                        byte[] messageBytes;
+                        try {
+                            while ((messageBytes = demarcator.nextToken()) != null) {
+                                try {
+                                    // Publish message to Satori
+                                    String message = new String(messageBytes);
+                                    try {
+                                        // try for JSON object
+                                        JsonObject obj = new JsonParser().parse(message).getAsJsonObject();
+                                        client.publish(channel, obj, Ack.YES);//TODO: Ack config property
+                                    } catch (Exception e){
+                                        // or raw string
+                                        client.publish(channel, message, Ack.YES);//TODO: Ack config property
+                                    }
+
+                                    // If we have a failure, don't try to send anything else.
+                                    if (!failures.isEmpty()) {
+                                        return;
+                                    }
+
+                                } catch (Exception e) {
+                                    // Failure!
+                                    failures.putIfAbsent(flowFile, e);
+                                }
+                            }
+                        } catch (final TokenTooLargeException ttle) {
+                            // Failure!
+                            failures.putIfAbsent(flowFile, ttle);
+                        }
+                    } catch (final Exception e) {
+                        // Failure!
+                        failures.putIfAbsent(flowFile, e);
+                    }
+
+                }
             }
         });
 
-        final String message = contentsRef.get();
 
-        // Publish message to Satori
-        try {
-            // Publish message to Satori
-            client.publish(channel, message, Ack.YES);//TODO: Ack config property
-
-            // Success!
-            session.transfer(flowFile, SUCCESS);
-        } catch (Throwable t)
+        if (!failures.isEmpty())
         {
-            // Failure!
-            getLogger().error("Unable to process file: \n" + t.getMessage());
+            // Deal with failures
+            getLogger().error("Failed to publish message to Satori: " + failures.get(flowFile).toString());
+            failures.clear();
             session.transfer(flowFile, FAILURE);
             context.yield();
+        } else {
+            // Success!
+            session.transfer(flowFile, SUCCESS);
         }
-
     }
 
     @OnStopped

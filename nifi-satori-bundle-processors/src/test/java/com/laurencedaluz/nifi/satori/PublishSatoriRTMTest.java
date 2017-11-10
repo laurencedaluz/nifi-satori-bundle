@@ -38,7 +38,7 @@ public class PublishSatoriRTMTest {
 
         // Content to be mock a geo csv file
         //String inputJson = "{\"test1\": 1, \"testOne\": \"one\"}";
-        String inputJson = "test,1,test,2";
+        String inputJson = "{\"test1\":1,\"test2\":\"two\"}\n{test2}";
         InputStream content = new ByteArrayInputStream(inputJson.getBytes());
 
         // Generate a test runner to mock a processor in a flow
@@ -48,6 +48,7 @@ public class PublishSatoriRTMTest {
         runner.setProperty(PublishSatoriRTM.ENDPOINT, "wss://qwxhvwv6.api.satori.com");
         runner.setProperty(PublishSatoriRTM.APPKEY, "aaa");
         runner.setProperty(PublishSatoriRTM.CHANNEL, "nifitest");
+        runner.setProperty(PublishSatoriRTM.MSG_DEMARCATOR, "\n");
         runner.assertValid();
 
         // Add the content to the runner
