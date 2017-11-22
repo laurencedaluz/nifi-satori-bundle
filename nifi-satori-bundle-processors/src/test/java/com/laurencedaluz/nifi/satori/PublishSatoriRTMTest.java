@@ -37,7 +37,6 @@ public class PublishSatoriRTMTest {
     public void testProcessor() {
 
         // Content to be mock a geo csv file
-        //String inputJson = "{\"test1\": 1, \"testOne\": \"one\"}";
         String inputJson = "{\"test1\":1,\"test2\":\"two\"}\n{test2}";
         InputStream content = new ByteArrayInputStream(inputJson.getBytes());
 
@@ -51,10 +50,10 @@ public class PublishSatoriRTMTest {
         runner.setProperty(PublishSatoriRTM.MSG_DEMARCATOR, "\n");
         runner.assertValid();
 
-        // Add the content to the runner
-        //runner.enqueue(content);
+        // Uncomment the lines below if you want to publish messages within this unit test.
+        // Note, you will need to update the properties above to a relevant channel.
 
-        // Run the enqueued content, it also takes an int = number of contents queued
+        //runner.enqueue(content);
         //runner.run(1);
     }
 

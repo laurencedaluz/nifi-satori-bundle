@@ -17,6 +17,7 @@
 package com.laurencedaluz.nifi.satori;
 
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import org.apache.nifi.annotation.behavior.*;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -161,8 +162,6 @@ public class PublishSatoriRTM extends AbstractProcessor {
     }
 
 
-    private final ConcurrentMap<FlowFile, Exception> failures = new ConcurrentHashMap<>();
-
     @OnScheduled
     public void onScheduled(final ProcessContext context) {
 
@@ -220,10 +219,13 @@ public class PublishSatoriRTM extends AbstractProcessor {
             return;
         }
 
+        final ConcurrentMap<FlowFile, Exception> failures = new ConcurrentHashMap<>();
+
         // Get required user properties
         String channel = context.getProperty(CHANNEL).getValue();
         boolean useDemarcator = context.getProperty(MSG_DEMARCATOR).isSet();
 
+        // Set demarcator value if required
         final byte[] demarcatorBytes;
         if (useDemarcator) {
             demarcatorBytes = context.getProperty(MSG_DEMARCATOR).getValue().getBytes(StandardCharsets.UTF_8);
@@ -231,50 +233,43 @@ public class PublishSatoriRTM extends AbstractProcessor {
             demarcatorBytes = null;
         }
 
+        // Read incoming FlowFile & publish message(s) to Satori
+        session.read(flowFile, rawIn -> {
+            try (final InputStream in = new BufferedInputStream(rawIn)) {
 
-        // Publish message to Satori
-        // TODO: clean up this nested try/catch mess
-        session.read(flowFile, new InputStreamCallback() {
-            @Override
-            public void process(final InputStream rawIn) throws IOException {
-                try (final InputStream in = new BufferedInputStream(rawIn)) {
+                // Split stream based on demarcator
+                // Note: Satori limits all user generated payloads to 64kB (so we will hardcode maxDataSize here)
+                try (final StreamDemarcator demarcator = new StreamDemarcator(in, demarcatorBytes, 64000)) {
+                    byte[] messageBytes;
 
-                    try (final StreamDemarcator demarcator = new StreamDemarcator(in, demarcatorBytes, 64000)) { //TODO: maximum message size
-                        byte[] messageBytes;
+                    while ((messageBytes = demarcator.nextToken()) != null) {
+                        // Publish message to Satori
+                        String message = new String(messageBytes);
+
+                        //RTM currently uses JSON data
                         try {
-                            while ((messageBytes = demarcator.nextToken()) != null) {
-                                try {
-                                    // Publish message to Satori
-                                    String message = new String(messageBytes);
-                                    try {
-                                        // try for JSON object
-                                        JsonObject obj = new JsonParser().parse(message).getAsJsonObject();
-                                        client.publish(channel, obj, Ack.YES);//TODO: Ack config property
-                                    } catch (Exception e){
-                                        // or raw string
-                                        client.publish(channel, message, Ack.YES);//TODO: Ack config property
-                                    }
-
-                                    // If we have a failure, don't try to send anything else.
-                                    if (!failures.isEmpty()) {
-                                        return;
-                                    }
-
-                                } catch (Exception e) {
-                                    // Failure!
-                                    failures.putIfAbsent(flowFile, e);
-                                }
-                            }
-                        } catch (final TokenTooLargeException ttle) {
+                            // try for JSON object
+                            JsonObject obj = new JsonParser().parse(message).getAsJsonObject();
+                            client.publish(channel, obj, Ack.YES);
+                        } catch (final JsonSyntaxException e) {
+                            // Send invalid JSON messages as raw string
+                            client.publish(channel, message, Ack.YES);
+                        } catch (final Exception e) {
                             // Failure!
-                            failures.putIfAbsent(flowFile, ttle);
+                            failures.putIfAbsent(flowFile, e);
                         }
-                    } catch (final Exception e) {
-                        // Failure!
-                        failures.putIfAbsent(flowFile, e);
+
+                        // If we have a failure, don't try to send anything else.
+                        if (!failures.isEmpty()) {
+                            return;
+                        }
                     }
 
+                } catch (final Exception e) {
+                    // Failure!
+                    failures.putIfAbsent(flowFile, e);
                 }
+
             }
         });
 
